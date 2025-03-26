@@ -1,0 +1,15 @@
+{
+  "name": "indexdbwrapper",
+  "version": "1.0.4",
+  "description": "indexDBWrapper",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@gitee.com:lecepin/IndexDBWrapper.git"
+  },
+  "author": "lecepin",
+  "license": "ISC"
+}

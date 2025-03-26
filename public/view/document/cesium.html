@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <style>
+    @import url(../../Source/Widgets/widgets.css);
+    html,
+    body,
+    #cesiumContainer {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+    }
+  </style>
+  <!-- <script src="https://cesium.com/downloads/cesiumjs/releases/1.92/Build/Cesium/Cesium.js"></script>
+  <link href="https://cesium.com/downloads/cesiumjs/releases/1.92/Build/Cesium/Widgets/widgets.css" rel="stylesheet"> -->
+  <script src="../../component/layui/layui.js"></script>
+  <script src="../../component/pear/pear.js"></script>
+  <script src="../../javascripts/jquery-3.6.0.min.js"></script>
+  <script src="https://cesium.com/downloads/cesiumjs/releases/1.96/Build/Cesium/Cesium.js"></script>
+  <link href="https://cesium.com/downloads/cesiumjs/releases/1.96/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+  <script src="../../javascripts/Cesium-GeoserverTerrainProvider-master/dist/GeoserverTerrainProvider.js"></script>
+  
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <link rel="stylesheet" href="../../component/pear/css/pear.css" />
+  <link rel="stylesheet" href="../../admin/css/other/console1.css" />
+</head>
+<body class="pear-container">
+        <div class="layui-row layui-col-space10">
+            <div style="z-index: 19891017; width: 100%; height: 100%; position: fixed; top: 0px; left: 0px;" id="cesiumContainer">
+            </div>
+        </div>
+  <script type="module">
+    // Your access token can be found at: https://cesium.com/ion/tokens.
+    // Replace `your_access_token` with your Cesium ion access token.
+      //window.CESIUM_BASE_URL = "../../Source/";
+      //import * as Cesium from "../../Source/Cesium.js"//将所有export的function，打包进入Cesium对象，后续通过Cesium对象进行访问  
+    console.log(Cesium);
+    Cesium.Ion.defaultAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJmZTg2ZjI2Mi0wNDg3LTQyYjUtOGYwYi1iMjg3Mjk3MWU2NmYiLCJpZCI6NDI0NTIsImlhdCI6MTYxMTQwMTc3OX0.UiMAnlAzKR5-SEIRRpelGOQi6KYJF_Pa2YXdOFfoHDg';
+    //使用geoserver的terrain provider
+    const terrainProvider = await Cesium.GeoserverTerrainProvider({
+              "url": "http://localhost:8080/geoserver",
+              "layerName": "cesium:geotiff_coverage"
+        });
+
+    // Initialize the Cesium Viewer in the HTML element with the `cesiumContainer` ID.
+    const viewer = new Cesium.Viewer('cesiumContainer');   // {terrainProvider: Cesium.createWorldTerrain() 
+    viewer.terrainProvider = terrainProvider;
+    //设置透明度和地下模式
+    viewer.scene.screenSpaceCameraController.enableCollisionDetection = false;
+    viewer.scene.globe.translucency.enabled = true;
+    viewer.scene.globe.translucency.frontFaceAlpha =0.8; //0.5是透明，1是不透明
+    //关闭抗锯齿
+    viewer.scene.fxaa=false
+    viewer.scene.postProcessStages.fxaa.enabled = false;
+    
+    //添加kml
+    // var source = viewer.dataSources.add(Cesium.KmlDataSource.load('../../b.kml',
+    //  {
+    //       camera: viewer.scene.camera,
+    //       canvas: viewer.scene.canvas,
+    //       screenOverlayContainer: viewer.container,
+    //       //clampToGround:true
+    //  })
+    // );
+    // source.then(function(dataSource) {
+    //   var entities = dataSource.entities.values;//Get the array of entities. 这些entity是什么格式的？
+    //   for (let i = 0; i < entities.length; i++) {
+    //   const entity = entities[i];
+      
+    //   //entity.polyline.clampToGround = true;
+    //   //entity._billboard.heightReference=Cesium.HeightReference.CLAMP_TO_GROUND;//设置贴地
+    //   if(entity.polyline){
+    //     console.log(entity);
+    //     //entity.polyline.clampToGround=true
+    //   }
+    // }
+    // })
+
+    //添加3d tiles
+    // Common setting for the skipLevelOfDetail optimization
+    // const tileset = viewer.scene.primitives.add(new Cesium.Cesium3DTileset({
+    //     url : '../../tileset/p4b/tileset.json',
+    //     skipLevelOfDetail : true,
+    //     baseScreenSpaceError : 1024,
+    //     skipScreenSpaceErrorFactor : 16,
+    //     skipLevels : 1,
+    //     immediatelyLoadDesiredLevelOfDetail : false,
+    //     loadSiblings : false,
+    //     cullWithChildrenBounds : true
+    // }));
+    // viewer.flyTo(tileset);
+
+    // Add Cesium OSM Buildings, a global 3D buildings layer.
+    const buildingTileset = viewer.scene.primitives.add(Cesium.createOsmBuildings());   
+
+    
+
+
+
+    // Add Cesium OSM Buildings, a global 3D buildings layer.
+    //const buildingTileset = viewer.scene.primitives.add(Cesium.createOsmBuildings()); 
+    //const buildingTileset = viewer.scene.primitives.add(Cesium.createOsmBuildings());   
+    // Fly the camera to San Francisco at the given longitude, latitude, and height.
+    viewer.camera.flyTo({
+      destination : Cesium.Cartesian3.fromDegrees(-122.4175, 37.655, 400),
+      orientation : {
+        heading : Cesium.Math.toRadians(0.0),
+        pitch : Cesium.Math.toRadians(-15.0),
+      }
+    });
+    //添加entity：让其他页面调用的
+    window.addEntity = addEntity;
+    function addEntity(entity)
+    {
+      viewer.entities.add(entity);
+      viewer.zoomTo(viewer.entities);
+    }
+    
+    
+    //test function：让其他页面调用的
+    window.test = test;
+    function test()
+    {
+        var wyoming = viewer.entities.add({
+        polygon : {
+            hierarchy : Cesium.Cartesian3.fromDegreesArray([
+                                    -109.080842,45.002073,
+                                    -105.91517,45.002073,
+                                    -104.058488,44.996596,
+                                    -104.053011,43.002989,
+                                    -104.053011,41.003906,
+                                    -105.728954,40.998429,
+                                    -107.919731,41.003906,
+                                    -109.04798,40.998429,
+                                    -111.047063,40.998429,
+                                    -111.047063,42.000709,
+                                    -111.047063,44.476286,
+                                    -111.05254,45.002073]),
+            height : 0,
+            material : Cesium.Color.RED.withAlpha(0.5),
+            outline : true,
+            outlineColor : Cesium.Color.BLACK
+        }
+        });
+        viewer.zoomTo(wyoming);
+        //
+        //测试gtlf模型
+        var position = Cesium.Cartesian3.fromDegrees(  -79.5618746585886, 8.956112038477281,1000);
+        const heading = Cesium.Math.toRadians(120);
+        const pitch = 0;
+        const roll = 0;
+        var orientation = Cesium.Transforms.headingPitchRollQuaternion(position, new Cesium.HeadingPitchRoll(heading, pitch, roll));
+        var entity = viewer.entities.add({
+            position : position,
+            orientation:orientation,
+            model : {
+                uri : '../../a.gltf'
+            }
+        });
+        viewer.trackedEntity = entity;
+        //
+        var position2 = Cesium.Cartesian3.fromDegrees(  -79.56250694365981, 8.954893773025661,1000);
+        var entity = viewer.entities.add({
+            position : position2,
+            orientation:orientation,
+            model : {
+                uri : '../../a.gltf'
+            }
+        });
+        var position3 = Cesium.Cartesian3.fromDegrees(  -79.56269994247904, 8.954379106525701);
+        var entity = viewer.entities.add({
+            position : position3,
+            orientation:orientation,
+            model : {
+                uri : '../../333.glb'
+            }
+        });
+
+    }
+    $(document).ready(function(){
+      //test();
+      console.log("test");
+
+    })
+    
+  </script>
+
+ </div>
+</body>
+</html>

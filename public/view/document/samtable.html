@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>开始使用 layui</title>
+  <link rel="stylesheet" href="../../component/layui/css/layui.css">
+  <link rel="stylesheet" href="../../component/pear/css/pear.css" />
+  <style>
+    /* 使得下拉框与单元格刚好合适 */
+    td .layui-form-select
+    {
+    margin-top: -10px;
+    margin-left: -15px;
+    margin-right: -15px;
+    }
+  </style>
+</head>
+<body>
+ 
+<!-- 你的 HTML 代码 -->
+<!-- 表单 -->
+
+
+<!-- 新增行button -->
+<button id="addRow" type="button" class="layui-btn">新增行</button>
+<!-- 动态表格 -->
+<table id="demo" lay-filter="test"></table>
+
+ 
+
+<script src="../../component/layui/layui.js"></script>
+<script>
+
+
+
+//table模块
+layui.use(['jquery','table'], function(){
+  var $ = layui.$ //重点处
+  var table = layui.table;
+  //第一个实例。
+  table.render({
+    elem: '#demo',//id为demo的table元素已在body中声明。
+    height: 312,
+    //url: '/demo/table/user/' //数据接口
+    page:{
+        curr: 1,
+        limit:100,
+    }, //开启分页
+    limit:100,
+    limits:[100],
+    data:[],//这里赋初始值
+    cols: [[ //表头
+      {field: 'id', title: 'ID',edit: 'text', width:80, sort: true, fixed: 'left'}
+      ,{field: 'username', title: '用户名',edit: 'text', width:80}
+      ,{field: 'sex', title: '性别',edit: 'text', width:80, sort: true}
+      ,{field: 'city', title: '城市',edit: 'text', width:80} 
+      ,{field: 'sign', title: '签名',edit: 'text', width: 177}
+      ,{field: 'experience', title: '积分',edit: 'text', width: 80, sort: true}
+      ,{field: 'score', title: '评分',edit: 'text', width: 80, sort: true}
+      ,{field: 'classify', title: '职业',edit: 'text', width: 80}
+      ,{field: 'wealth', title: '财富',edit: 'text', width: 135, sort: true},
+      {field: 'right', title: '操作',edit: 'text',width:80,align: 'center', templet: function(rowData){return '删除行';}},
+      {field: 'tt', title: '号码',templet:function(d){//表格中放入下拉菜单
+                        return '<select name="city" lay-verify="required">\n' +
+                            '        <option value=""></option>\n' +
+                            '        <option value="1001">1号</option>\n' +
+                            '        <option value="1000">2号</option>\n' +
+                            '      </select>';
+                    },align:'center'},
+    ]],
+    done: function (res, curr, count) {
+                //数据渲染完的回调。
+                //由于layui 设置了超出隐藏，所以这里改变下，以兼容操作按钮的下拉菜单
+                $(".layui-table-cell").css('overflow', 'visible'); 
+            }
+  });
+  //
+  table.on('edit(test)', function(obj)
+  { //注：edit是固定事件名，test是table原始容器的属性 lay-filter="对应的值"
+  console.log(obj.value); //得到修改后的值
+  console.log(obj.field); //当前编辑的字段名
+  console.log(obj.data); //所在行的所有相关数据  
+  });
+  
+});
+
+//
+//添加行
+layui.use(['jquery','table'], function(){ 
+    var $ = layui.$ //重点处
+    var table = layui.table;
+    $("#addRow").on("click", function() {
+    tableActive.addNewRow();
+    });
+    var tableActive = {
+    //添加行
+    addNewRow: function() {
+    //获取表格当前数据
+    var newData =[];
+    newData = table.cache["demo"];//获取现有所有数据
+    console.log(newData);
+    //新行数据
+    var newRow= {
+    "id":1,
+    //给新行空数据
+    };
+    //将新行插入表格数据中
+    newData.push(newRow);
+    //使用新数据重载表格
+    table.reload(
+        "demo",
+        {
+        page:{
+        curr: 1,
+        limit:100,
+        }, //开启分页
+        limit:100,
+        limits:[100],
+        data: newData
+        },
+        //true,
+        );
+    //
+    }}
+})
+
+
+</script> 
+</body>
+</html>
+
+
+
+
+ 

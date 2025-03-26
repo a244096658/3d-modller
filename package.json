@@ -1,0 +1,23 @@
+{
+  "name": "myapp",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "start": "node ./bin/www"
+  },
+  "dependencies": {
+    "cesium": "^1.93.0",
+    "cookie-parser": "~1.4.4",
+    "debug": "~2.6.9",
+    "edge-js": "^16.6.0",
+    "ejs": "^3.1.6",
+    "express": "~4.16.1",
+    "http-errors": "~1.6.3",
+    "indexdbwrapper": "^1.0.4",
+    "jade": "~1.11.0",
+    "mathjs": "^10.6.4",
+    "morgan": "~1.9.1",
+    "node-gyp": "^9.0.0",
+    "proj4": "^2.8.0"
+  }
+}

@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>开始使用 layui</title>
+  <link rel="stylesheet" href="../../component/layui/css/layui.css">
+  <link rel="stylesheet" href="../../component/pear/css/pear.css" />
+  <style>
+    /* 使得下拉框与单元格刚好合适 */
+    td .layui-form-select
+    {
+    margin-top: -10px;
+    margin-left: -15px;
+    margin-right: -15px;
+    }
+  </style>
+</head>
+<body>
+ 
+<!-- 你的 HTML 代码 -->
+
+<!-- 新增行button -->
+<button id="createAlignment" type="button" class="layui-btn">创建路线</button>
+
+
+ 
+<script src="../../component/layui/layui.js"></script>
+<script type="module">
+import * as gisHelper from "../../javascripts/gis/gisHelper.js"//将所有export的function，打包进入gisProcess对象，后续通过gisProcess对象进行访问  
+import * as Cesium from "../../Source/Cesium.js"//将所有export的function，打包进入Cesium对象，后续通过Cesium对象进行访问  
+//
+//添加行
+layui.use(['jquery'], function(){ 
+    var $ = layui.$ //重点处
+    var cesiumContainer = $(window.parent.document).contents().find("#16")[0].contentWindow;//拿到cesium主页面，然后调用其方法。本controller主要做后端ajax，然后扔数据给cesium主页面（通过调用其方法）
+    $("#createAlignment").on("click", function() {
+      cesiumContainer.test();
+      $.ajax({
+                //url
+                url: '/alignment',
+                //参数
+                data: {a:100, b:200},
+                //请求类型
+                type: 'POST',
+                //响应体结果
+                dataType: 'json',
+                //成功的回调
+                success:function(data){
+                    console.log(data);
+                    //返回数据是3dLineList.entity2是让设计线贴地，并改颜色为绿色
+                    var entityList1 = gisHelper.toPolyline(data);
+                    console.log(entityList1);
+                    entityList1.forEach(function(entity1,index){cesiumContainer.addEntity(entity1);})
+                    var entityList2 = gisHelper.toPolyline(data);
+                    entityList2.forEach(function(entity2,index)
+                    {
+                      entity2.polyline.clampToGround = true;
+                      entity2.polyline.material.color = Cesium.Color.GREEN,
+                      cesiumContainer.addEntity(entity2);
+                    })
+                },
+                //超时时间
+                timeout: 2000,
+                //失败的回调
+                error: function(){
+                    console.log('出错啦!!');
+                },
+                //头信息
+                headers: {
+                    c:300,
+                    d:400
+                }
+            });
+    });
+})
+
+
+</script> 
+</body>
+</html>
+
+
+
+
+ 

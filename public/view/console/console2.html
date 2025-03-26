@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>控制后台</title>
+		<meta name="renderer" content="webkit">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+		<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+		<link rel="stylesheet" href="../../component/pear/css/pear.css" />
+		<link rel="stylesheet" href="../../admin/css/other/console1.css" />
+	</head>
+	<body class="pear-container">
+		<div class="layui-row layui-col-space10">
+			<div class="layui-col-md4">
+				<div class="layui-card layui-panel">
+					<div class="layui-card-header">
+						装配体
+					</div>
+					<div class="layui-card-body">	
+						<!-- 新增行button -->
+						<button id="addparam" type="button" class="layui-btn">加参数</button>
+						<button id="addRow" type="button" class="layui-btn">加零件</button>
+						<button id="gis" type="button" class="layui-btn">拼装</button>
+						<button id="download" type="button" class="layui-btn">下载</button>
+						<button id="save" type="button" class="layui-btn">保存</button>
+						<button id="see" type="button" class="layui-btn">查看</button>
+						<button id="load" type="button" class="layui-btn">载入</button> 
+						<!-- <button id="save" type="button" class="layui-btn">保存</button>
+						<button id="load" type="button" class="layui-btn">载入</button> -->
+						<!-- input输入 -->
+						<form class="layui-form" action="">
+							<div class="layui-form-item">
+							  <label class="layui-form-label">装配体名称</label>
+							  <div class="layui-input-block">
+								<input id="element" type="text" name="title" required  lay-verify="required" placeholder="请输入构件名称" autocomplete="off" class="layui-input">
+							  </div>
+							</div>
+						</form>
+						<!-- 动态表格 -->
+						<a>零件拼装区域</a>
+						<table id="entity" lay-filter="test"></table>	
+						<a>总体参数区域</a>
+						<table id="param" lay-filter="abc"></table>
+	
+					</div>
+				</div>
+			</div>
+
+			<div class="layui-col-md8">
+				<div class="layui-card layui-panel">
+					<div class="layui-card-header">
+						图形区域
+					</div>
+					<div class="layui-card-body">	
+						<div id="container">
+
+						</div>
+					</div>
+				</div>
+			</div>
+			
+		</div>
+
+		<!-- <div class="layui-row layui-col-space15">
+
+		</div> -->
+		<!--</div>-->
+		<script src="../../component/layui/layui.js"></script>
+		<script src="../../component/pear/pear.js"></script>
+		<script>
+			//table渲染
+			layui.use(['jquery','table'], function(){
+			var $ = layui.$ //重点处
+			var table = layui.table;
+			//第一个参数table
+			table.render({
+				elem: '#param',//id为demo的table元素已在body中声明。
+				height: 300,
+				//url: '/demo/table/user/' //数据接口
+				page:{
+					curr: 1,
+					limit:100,
+				}, //开启分页
+				limit:100,
+				limits:[100],
+				data:[],//这里赋初始值
+				cols: [[ //表头
+				{field: 'key', title: '参数名',edit: 'text', width:80}
+				,{field: 'value', title: '参数默认值',edit: 'text', width:80}
+				]],
+				done: function (res, curr, count) {
+							//数据渲染完的回调。
+							//由于layui 设置了超出隐藏，所以这里改变下，以兼容操作按钮的下拉菜单
+							$(".layui-table-cell").css('overflow', 'visible'); 
+						}
+			});
+			//第二个点table
+			table.render({
+				elem: '#entity',//id为demo的table元素已在body中声明。
+				height: 512,
+				//url: '/demo/table/user/' //数据接口
+				page:{
+					curr: 1,
+					limit:100,
+				}, //开启分页
+				limit:100,
+				limits:[100],
+				data:[],//这里赋初始值
+				cols: [[ //表头
+				{field: 'entity_name', title: '零件名称',edit: 'text', width:40},
+				,{field: 'vertical', title: 'vertical',edit: 'text', width:60}
+				,{field: 'lateral', title: 'lateral',edit: 'text', width:60}
+				,{field: 'longitudinal', title: 'longitudinal',edit: 'text', width:60}
+				]],
+				done: function (res, curr, count) {
+							//数据渲染完的回调。
+							//由于layui 设置了超出隐藏，所以这里改变下，以兼容操作按钮的下拉菜单
+							$(".layui-table-cell").css('overflow', 'visible'); 
+						}
+			});
+			//
+			//
+			// table.on('edit(test)', function(obj)
+			// { //注：edit是固定事件名，test是table原始容器的属性 lay-filter="对应的值"
+			// console.log(obj.value); //得到修改后的值
+			// console.log(obj.field); //当前编辑的字段名
+			// console.log(obj.data); //所在行的所有相关数据  
+			// });
+			
+			});
+
+			//
+			//参数和点table添加行
+			layui.use(['jquery','table'], function(){ 
+				var $ = layui.$ //重点处
+				var table = layui.table;
+				$("#addRow").on("click", function() {
+					tableActive.addNewRow();
+				});
+				$("#addparam").on("click", function() {
+					tableparam.addNewRow();
+				});
+				var tableActive = {
+					//点的表：添加行
+					addNewRow: function() {
+						//获取表格当前数据
+						var newData =[];
+						newData = table.cache["entity"];//获取现有所有数据
+						//console.log(newData);
+						//新行数据
+						var newRow= {
+						"id":1,
+						"entity_name":`e${newData.length+1}`,
+						//给新行空数据
+						};
+						//将新行插入表格数据中
+						newData.push(newRow);
+						//使用新数据重载表格
+						table.reload(
+							"entity",
+							{
+							page:{
+							curr: 1,
+							limit:100,
+							}, //开启分页
+							limit:100,
+							limits:[100],
+							data: newData
+							},
+							//true,
+						);
+					//
+				}}
+				//
+				var tableparam = {
+					//参数的表：添加行
+					addNewRow: function() {
+						//获取表格当前数据
+						var newData =[];
+						newData = table.cache["param"];//获取现有所有数据
+						//console.log(newData);
+						//新行数据
+						var newRow= {
+						"id":1,
+						//给新行空数据
+						};
+						//将新行插入表格数据中
+						newData.push(newRow);
+						//使用新数据重载表格
+						table.reload(
+							"param",
+							{
+							page:{
+							curr: 1,
+							limit:100,
+							}, //开启分页
+							limit:100,
+							limits:[100],
+							data: newData
+							},
+						);
+				}}			
+			})
+			//
+
+
+		</script>
+		
+
+		<script async src="https://unpkg.com/es-module-shims@1.3.6/dist/es-module-shims.js"></script>
+		<script async src="https://cdn.bootcdn.net/ajax/libs/mathjs/10.6.1/math.min.js"></script>
+		<script type="importmap">
+			{
+				"imports": {
+					"three": "../../three/build/three.module.js"
+				}
+			}
+		</script>
+		<!-- 添加数据库 -->
+		<script type="module">
+			import {DBWrapper} from '../../indexdbwrapper/index.js';
+			const db = new DBWrapper("db2", 1, {
+			onupgradeneeded: e => {
+				const db = e.target.result;
+				const objStore = db.createObjectStore("t2", {
+				autoIncrement: true,
+				keyPath: "name"//主键
+				});
+				objStore.createIndex("name", "name", { unique: !1 });//存name,length,direction的kv作为value
+				objStore.createIndex("parameters", "parameters", { unique: !1 });//存所有参数的kv作为value
+				objStore.createIndex("entitys", "entitys", { unique: !1 });//存所有点的kv作为value
+			}})
+			//保存和载入数据库
+			layui.use(['jquery','table','form'], function(){ 
+				var $ = layui.$ //重点处
+				var table = layui.table;
+				var form = layui.form;
+				//构造数据
+				$("#save").on("click", function() {
+					var name = document.getElementById("element").value;
+					var parametersString = layui.table.cache["param"];
+					var entitysString = layui.table.cache["entity"];
+					//添加数据
+					db.add('t2', {name:name, parameters: parametersString, entitys:entitysString})
+					.then(res => {
+						console.log('add object ok!', res)
+						db.close() // 关闭数据库
+						console.log('db close')
+						alert("数据库保存成功");//后续改成layer.on
+					})
+					.catch(err => {
+						console.log('add object error', err)
+						db.close() // 关闭数据库
+						console.log('db close')
+					})	
+				});
+				//加载数据
+				$("#load").on("click", function() {//requst是promise，需要用then拿值
+					var className = document.getElementById("element").value;
+					var request = db.get('t2', className).then(
+					(result) => {//result是拿回来的对象
+						console.log(result);
+						//加载param表
+						table.render({
+							elem:"#param",
+							page:{
+								curr: 1,
+								limit:100,
+							}, //开启分页
+							limit:100,
+							limits:[100],
+							cols:[[
+								{
+								field: 'key',
+								title: '参数名',
+								width: '50%',
+								edit: 'text',
+								},
+								{
+								field: 'value',
+								title: '默认值',
+								width: '50%',
+								edit: 'text',
+								}
+							]],
+							data:result.parameters,//[{key: 'a', value: '23'}]
+						});
+						//加载point表
+						table.render({
+							elem:"#entity",
+							page:{
+								curr: 1,
+								limit:100,
+							}, //开启分页
+							limit:100,
+							limits:[100],
+							cols:[[
+								{
+								field: 'entity_name',
+								title: '零件名称',
+								width: '25%',
+								edit: 'text',
+								},
+								{
+								field: 'vertical',
+								title: 'vertical',
+								width: '25%',
+								edit: 'text',
+								},
+								{
+								field: 'lateral',
+								title: 'lateral',
+								width: '25%',
+								edit: 'text',
+								},
+								{
+								field: 'longitudinal',
+								title: 'longitudinal',
+								width: '25%',
+								edit: 'text',
+								}
+							]],
+							data:result.entitys,//[{key: 'a', value: '23'}]
+						});
+					}
+					);
+				});
+				//查询数据
+				$("#see").on("click", function() {//requst是promise，需要用then拿值
+					var request1 = db.getAll('t2').then(
+					(result) => {//result是拿回来的对象,是一个list，包含所有对象
+						//把result中所有name提出出来
+						var string="数据库中已存的装配体如下：";
+						result.forEach(function(value,index){
+							string += '</br>'+'&nbsp &nbsp'+value.name;
+						})
+						layer.open({
+							title: '所有装配体',
+							type: 1,
+							area: ['500px', '300px'],
+							content: string,
+							}); 
+						}
+					);
+				});
+			})
+
+
+
+
+			//Start threejs
+			import * as THREE from 'three';
+			// import Stats from '../../three/jsm/libs/stats.module.js';
+			import { OrbitControls } from '../../three/jsm/controls/OrbitControls.js';
+			import { TextGeometry } from '../../three/jsm/geometries/TextGeometry.js';
+			import { FontLoader } from '../../three/jsm/loaders/FontLoader.js';
+			import { GLTFExporter } from '../../three/jsm/exporters/GLTFExporter.js';
+			//
+
+			let renderer, stats, scene, camera;
+
+			init();
+			animate();
+			//连接数据库
+			const request = window.indexedDB.open('db1',1);
+			request.onsuccess=event=>
+			{
+				const db = event.target.result;
+				console.log(db);
+				//查询数据库,并获取所有entity的gis
+				layui.use(['jquery','table'], function(){ 
+					var $ = layui.$ //重点处
+					var table = layui.table;	
+					$("#gis").on("click", function() {
+						//两个对象，一个真实值，绘制threejs；一个带参数的，生成代码
+						var assembly =
+						{
+							type: "@assembly",   
+							transformation:{//整个桥墩这个assembly(实际是gltf)要transform到真实位置的变换：故使用真实世界的投影坐标系: eas,nor,ele. (x,y,z)
+								origin:"@world origin",
+								cs:"@world projection",//代表coordiante system坐标系
+								translate:{
+									east:{},//东西 /对应x 暂未使用测量坐标系（x代表南北那种），此x代表东西、y代表南北的方式可直接对接llh地理坐标系计算. 从后端工程server接口发过来的,所以是eas, nor, ele.
+									north:{},//南北 对应y
+									elevation:{}//高程。对应z. 对应的是gis里边的xyz
+								},
+								rotate: {//增加整个桥墩的旋转
+									north: {},
+									east: {},
+									elevation: {}
+                				}
+							},
+							entityList:[],//每个entity是一个零件
+							properties: {
+								name: document.getElementById( 'element' ).value
+							}
+						}	
+						//带公式的assembly
+						var assemblyWithParam = JSON.parse(JSON.stringify(assembly));
+						var data = layui.table.cache["entity"];
+						const group = new THREE.Group();//extrude的group
+						group.name ="e1";
+						data.forEach(function(entity,index){//从表单的entity的name，查询数据库的entity
+							var name = entity.entity_name;
+							var vertical = entity.vertical;
+							var lateral = entity.lateral;
+							var longitudinal = entity.longitudinal;
+							var transaction = db.transaction(['t1']);
+							var objectStore = transaction.objectStore('t1');
+							var request = objectStore.get(name);//查询的零件的名称，主键
+							request.onerror = function(event) {
+								console.log("查询不到这个零件");
+							};
+							request.onsuccess = function( event) {//这是异步的！！
+								var result = request.result;//这个是拿到的entity对象（从实体数字化处创建的）
+								var gis = JSON.parse(result.gis);// 
+								var gisP = JSON.parse(result.gisP);//带参数的gis entity，需要把装配体的参数，赋予给entity的translate
+								console.log(getValue(vertical));
+								gis.transformation.translate.vertical =getValue(vertical);
+								gis.transformation.translate.lateral = getValue(lateral);
+								gis.transformation.translate.longitudinal = getValue(longitudinal);
+								gisP.transformation.translate.vertical =vertical;
+								gisP.transformation.translate.lateral = lateral;
+								gisP.transformation.translate.longitudinal = longitudinal;
+								//处理名称中没加@的情况
+								if(!gisP.properties.name.includes("@") ) gisP.properties.name = "@"+gisP.properties.name; 
+								//next: 把这两个entity放到assembly中，加上坐标转换，three中显示
+								assembly.entityList.push(gis);
+								assemblyWithParam.entityList.push(gisP);
+								if(index === data.length-1)
+								{
+									//添加entity到scene
+									scene.remove(scene.getObjectByName("e1")); 
+									scene.add( group );
+									assembly.entityList.forEach(function(entity,index){
+										var extrude = toThreeExtrude(entity);
+										group.add(extrude);
+									})
+									//
+									layer.open({
+									title: 'GIS实体',
+									type: 1,
+									area: ['500px', '300px'],
+									content: createGisCode(assemblyWithParam,assembly)
+									}); 
+								}
+								//next: 1、translate的参数要用eval计算，值给assembly绘图，参数给withParam的对象，出代码  2、出一个function的代码，一部分是装配体的所有属性，一部分是gis数据（带参数的）
+							}//异步查询结束
+						})//循环结束
+
+					})//click结束
+
+				})
+			}
+			//下载场景内容为gltf/glb文件
+			// Instantiate a exporter
+			const exporter = new GLTFExporter();
+			layui.use(['jquery'], function(){ 
+				var $ = layui.$ //重点处
+				$("#download").on("click", function() {
+					dowloadGLTF();
+					console.log("download");
+				});
+			});
+			const options = {//use all default
+					// trs: false,
+					// onlyVisible: true,
+					// truncateDrawRange: true,
+					// binary: false,
+					// maxTextureSize: 4096
+				};
+			function dowloadGLTF(){
+				exporter.parse(
+					scene.getObjectByName("e1"),//下载的是scene中的这个object。直接下载scene在本地3d builder上打不开，因为有LINE元素
+					// called when the gltf has been generated
+					function ( result ) {
+						if ( result instanceof ArrayBuffer ) {
+							saveArrayBuffer( result, 'scene.glb' );
+						} else {
+							const output = JSON.stringify( result, null, 2 );
+							saveString( output, `${document.getElementById( 'element' ).value}.gltf` );//第二个参数是文件名
+						}
+						},
+					// called when there is an error in the generation
+					function ( error ) {
+						console.log( 'An error happened downloading GLTF' );
+					},
+					options
+				);
+			}
+			const link = document.createElement( 'a' );
+			link.style.display = 'none';
+			document.body.appendChild( link ); // Firefox workaround, see #6594
+			function save( blob, filename ) {
+				link.href = URL.createObjectURL( blob );
+				link.download = filename;
+				link.click();
+			}
+			function saveArrayBuffer( buffer, filename ) {
+			save( new Blob( [ buffer ], { type: 'application/octet-stream' } ), filename );
+			}
+			function saveString( text, filename ) {
+				save( new Blob( [ text ], { type: 'text/plain' } ), filename );
+			}
+
+			//
+			//从公式如a+b, 获取它的值
+			function getValue(gongshi)
+			{
+				//length也需要计算一下
+				//1- 构建参数表达式：a = 10，用于eval
+				var paramtable = layui.table.cache["param"];
+				var paramfunc ="";
+				// debugger
+				paramtable.forEach(function(param,index)
+				{
+					var func = `var ${param.key}=${param.value};`;
+					paramfunc += func;
+				})
+				var value ;
+				eval(`${paramfunc} value= ${gongshi};`);//利用方程求值
+				//
+				return value;
+			}
+
+			//生成代码 - 下部装配体的gis代码
+			function createGisCode(assemblyWithParam,assembly)
+			{
+				var codeAll = "";
+				var name = document.getElementById( 'element' ).value;
+				layui.use(['jquery','table'], function(){ 
+					var $ = layui.$ //重点处
+					var table = layui.table;	
+					//开始
+					var start = `class ${name} {`;//声明一个类
+					var end = "};";
+					//构造函数声明区
+					var constructor = `constructor(parameter) { this.parameter = parameter; this.name="${name}";`;//parameter是储存所有属性的对象. 结构是chicun,transformation
+					constructor += "this.east = parameter.Transformation.Translate.East;"+"<br/>";
+					constructor += "this.north = parameter.Transformation.Translate.North;"+"<br/>";
+					constructor += "this.elevation = parameter.Transformation.Translate.Elevation;"+"<br/>";
+					constructor += "this.east1 = parameter.Transformation.Rotate.East;"+"<br/>";
+					constructor += "this.north1 = parameter.Transformation.Rotate.North;"+"<br/>";
+					constructor += "this.elevation1 = parameter.Transformation.Rotate.Elevation;"+"<br/>";
+					//
+					//给assembly赋予east north elevation
+					assemblyWithParam.transformation.translate.east = "this.east";
+					assemblyWithParam.transformation.translate.north = "this.north";
+					assemblyWithParam.transformation.translate.elevation = "this.elevation";
+					assemblyWithParam.transformation.rotate.east = "this.east1";
+					assemblyWithParam.transformation.rotate.north = "this.north1";
+					assemblyWithParam.transformation.rotate.elevation = "this.elevation1";
+					assemblyWithParam.properties.name = "this.name";
+					//
+					var paramList = table.cache["param"];
+					var variableCode = "";
+					paramList.forEach(function(param,value){
+						var code = `var ${param.key} = this.parameter.${param.key};`;
+						variableCode += code+"<br/>";
+					});
+					var function1 = `toProfilePoints(){${variableCode} return ${JSON.stringify(assemblyWithParam).replace(/\"/g, "").replace(/\@([^\,\}]+)/g, "\"$1\"")} };`;
+					//
+
+					//转换成3d数据方法区
+					var method = `to3D() {return this.toProfilePoints()};`;
+					//module exports
+					var exports = `module.exports = ${name}`;
+					codeAll = "//第一部分是接口代码" +"<br/>"+ start+ "<br/>" + constructor + "<br/>"  + end  +"<br/>" +function1+"<br/>"+ method +"<br/>" +end +"<br/>" +exports+ "<br/>"+ "<br/>" + "//第二部分是实体数据" + JSON.stringify(assembly);					
+				})
+				return codeAll;
+			}
+			//next: 数据库加上，生成代码部分优化, 加一个download gltf
+
+
+
+
+
+
+			// From d3-threeD.js
+			/* This Source Code Form is subject to the terms of the Mozilla Public
+			 * License, v. 2.0. If a copy of the MPL was not distributed with this file,
+			 * You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+			//
+			//
+
+			//转换我方model到threejs的model, 需添加上transformation
+			function toThreeExtrude(entity)
+			{
+				//平移矩阵
+				var dx = entity.transformation.translate.lateral;
+				var dy = entity.transformation.translate.vertical;
+				var dz = entity.transformation.translate.longitudinal;
+				const translateMatrix = [[1, 0, 0, 0],[0, 1, 0, 0],[0, 0, 1, 0],[dx, dy, dz, 1] ]
+				//要平移的点矩阵
+				var lineMatrix=[];
+				var line = JSON.parse(JSON.stringify(entity.geometry.line));//克隆一份。[[],[],[]]
+				line.forEach(function(value,index){//变成齐次
+					value.push(1);
+					lineMatrix.push(value);
+				})
+				//运行平移矩阵
+				var resultLineMatrix = math.multiply(lineMatrix, translateMatrix) //用mathjs的库进行坐标变换
+				//构建three的profile shape. shape不进行坐标空间变换，保持local即可。但需要对xy进行一下互换。
+				var points=[];
+				var profile = entity.geometry.profile;
+				//根据拉伸向量方向，调整profile的值
+				if (line[1][1]!==0 && line[1][1]>0 ){//竖向拉伸情况下：且拉伸向量为正。 即：+Y
+					profile.forEach(function(pointPair,index)//entity.geometry.profile.forEach(function(pointPair,index)
+					{
+						var point = new THREE.Vector2(pointPair[1],-pointPair[0]); //竖向拉伸的情况：但需要对截面的xy进行一下互换。因为正常的截面的xy进入threejs和pathline结合后会改变方向，截面跟着pathline跑的。
+						points.push(point);
+						console.log("竖向拉伸 正");
+					})
+				}
+				if (line[1][1]!==0 && line[1][1]<0 ){//竖向拉伸情况下：且拉伸向量为负。 即：-Y
+					profile.forEach(function(pointPair,index)//entity.geometry.profile.forEach(function(pointPair,index)
+					{
+						var point = new THREE.Vector2(pointPair[1],pointPair[0]); //竖向拉伸的情况：但需要对截面的xy进行一下互换。因为正常的截面的xy进入threejs和pathline结合后会改变方向，截面跟着pathline跑的。
+						points.push(point);
+						console.log("竖向拉伸 负");
+					})
+				}
+				if (line[1][0]!==0 && line[1][0]>0){//横向拉伸情况下：且拉伸向量为正。 即：+X
+					profile.forEach(function(pointPair,index)//entity.geometry.profile.forEach(function(pointPair,index)
+					{
+						var point = new THREE.Vector2(-pointPair[0],pointPair[1]); //竖向拉伸的情况：但需要对截面的xy进行一下互换。因为正常的截面的xy进入threejs和pathline结合后会改变方向，截面跟着pathline跑的。
+						points.push(point);
+						console.log("横向拉伸 正");
+					})
+				}
+				if (line[1][0]!==0 && line[1][0]<0){//横向拉伸情况下：且拉伸向量为负。 即：-X
+					profile.forEach(function(pointPair,index)//entity.geometry.profile.forEach(function(pointPair,index)
+					{
+						var point = new THREE.Vector2(-pointPair[0],-pointPair[1]); //竖向拉伸的情况：但需要对截面的xy进行一下互换。因为正常的截面的xy进入threejs和pathline结合后会改变方向，截面跟着pathline跑的。
+						points.push(point);
+						console.log("横向拉伸 负");
+					})
+				}
+				if (line[1][2]!==0 && line[1][2]>0){//纵向拉伸情况下：且拉伸向量为正。 即：+Z
+					profile.forEach(function(pointPair,index)//entity.geometry.profile.forEach(function(pointPair,index)
+					{
+						var point = new THREE.Vector2(-pointPair[1],pointPair[0]); //竖向拉伸的情况：但需要对截面的xy进行一下互换。因为正常的截面的xy进入threejs和pathline结合后会改变方向，截面跟着pathline跑的。
+						points.push(point);
+						console.log("纵向拉伸 正");
+					})
+				}
+				if (line[1][2]!==0 && line[1][2]<0){//纵向拉伸情况下：且拉伸向量为负。 即：-Z
+					profile.forEach(function(pointPair,index)//entity.geometry.profile.forEach(function(pointPair,index)
+					{
+						var point = new THREE.Vector2(-pointPair[1],-pointPair[0]); //竖向拉伸的情况：但需要对截面的xy进行一下互换。因为正常的截面的xy进入threejs和pathline结合后会改变方向，截面跟着pathline跑的。
+						points.push(point);
+						console.log("纵向拉伸 负");
+					})
+				}
+				var profile = new THREE.Shape(points);
+				//构建three的path line
+				var v1 = new THREE.Vector3(resultLineMatrix[0][0],resultLineMatrix[0][1],resultLineMatrix[0][2]);
+				var v2 = new THREE.Vector3(resultLineMatrix[1][0],resultLineMatrix[1][1],resultLineMatrix[1][2]);
+				var path = new THREE.LineCurve3(v1,v2);
+				//构建three的拉伸设置
+				const extrudeSettings = {
+				steps: 1,
+				//depth: 200000,//若使用extrudePath，则此值没用了。
+				bevelEnabled: false,
+				bevelThickness: 1,
+				bevelSize: 1,
+				bevelOffset: 0,
+				bevelSegments: 1,
+				extrudePath:path,
+				};
+				//构建three的最终实体
+				const geometry = new THREE.ExtrudeGeometry( profile, extrudeSettings );
+				const material = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
+				const extrude = new THREE.Mesh( geometry, material ) ;
+				//构建拉伸体的list
+				return extrude;
+			}
+
+			//
+			function init() {
+
+				const container = document.getElementById( 'container' );
+
+				//
+
+				scene = new THREE.Scene();
+				scene.background = new THREE.Color( 0xb0b0b0 );
+
+				//
+
+				camera = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight, 1, 1000 );
+				camera.position.set( 0, 0, 200 );
+
+				//
+
+				const group = new THREE.Group();
+				scene.add( group );
+
+				//
+
+				const directionalLight = new THREE.DirectionalLight( 0xffffff, 0.6 );
+				directionalLight.position.set( 0.75, 0.75, 1.0 ).normalize();
+				scene.add( directionalLight );
+
+				const ambientLight = new THREE.AmbientLight( 0xcccccc, 0.2 );
+				scene.add( ambientLight );
+
+				//
+
+				const helper = new THREE.GridHelper( 160, 10 );
+				helper.rotation.x = Math.PI / 2;
+				group.add( helper );
+
+				//
+				const axesHelper = new THREE.AxesHelper( 50 );
+				scene.add( axesHelper );
+
+				//
+
+				renderer = new THREE.WebGLRenderer( { antialias: true } );
+				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize( window.innerWidth/1.2, window.innerHeight/1.2 );
+				container.appendChild( renderer.domElement );
+
+				//
+
+				const controls = new OrbitControls( camera, renderer.domElement );
+				controls.minDistance = 100;
+				controls.maxDistance = 1000;
+
+				//
+
+				// stats = new Stats();
+				// container.appendChild( stats.dom );
+
+				//
+
+				window.addEventListener( 'resize', onWindowResize );
+		
+
+			}
+
+
+			function onWindowResize() {
+
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+
+				renderer.setSize( window.innerWidth/2, window.innerHeight/2 );
+
+			}
+
+			function animate() {
+
+				requestAnimationFrame( animate );
+
+				render();
+				// stats.update();
+
+			}
+
+			function render() {
+
+				renderer.render( scene, camera );
+
+			}
+
+		</script>
+
+	</body>
+</html>

@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <!-- Include the CesiumJS JavaScript and CSS files -->
+  <script src="https://cesium.com/downloads/cesiumjs/releases/1.92/Build/Cesium/Cesium.js"></script>
+  <script src="./javascripts/jquery-3.6.0.min.js"></script>
+  <link href="https://cesium.com/downloads/cesiumjs/releases/1.92/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+</head>
+<body>
+  <div id="cesiumContainer"></div>
+  <button onclick="add()"> add </button>
+  <button id="b01"> geojson </button>
+  <button id="b02"> 3dSweep </button>
+  <button id="b03"> 3dLine </button>
+  <button id="b04"> bridgeLine </button>
+  <script>
+    // Your access token can be found at: https://cesium.com/ion/tokens.
+    // This is the default access token from your ion account
+
+    Cesium.Ion.defaultAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJmZTg2ZjI2Mi0wNDg3LTQyYjUtOGYwYi1iMjg3Mjk3MWU2NmYiLCJpZCI6NDI0NTIsImlhdCI6MTYxMTQwMTc3OX0.UiMAnlAzKR5-SEIRRpelGOQi6KYJF_Pa2YXdOFfoHDg';
+
+    // Initialize the Cesium Viewer in the HTML element with the `cesiumContainer` ID.
+    const viewer = new Cesium.Viewer('cesiumContainer', {
+      terrainProvider: Cesium.createWorldTerrain()
+    });   
+    //设置透明度和地下模式
+    viewer.scene.screenSpaceCameraController.enableCollisionDetection = false;
+    viewer.scene.globe.translucency.enabled = true;
+    viewer.scene.globe.translucency.frontFaceAlpha =1; 
+    //关闭抗锯齿
+    viewer.scene.fxaa=false
+    viewer.scene.postProcessStages.fxaa.enabled = false;
+    // Add Cesium OSM Buildings, a global 3D buildings layer.
+    const buildingTileset = viewer.scene.primitives.add(Cesium.createOsmBuildings());   
+
+    //1- 添加代码
+function computeCircle(radius) {
+  const positions = [];
+  for (let i = 0; i < 360; i+=120) {
+    const radians = Cesium.Math.toRadians(i);
+    positions.push(
+      new Cesium.Cartesian2(
+        radius * Math.cos(radians),
+        radius * Math.sin(radians)
+      )
+    );
+  }
+  return positions;
+}
+
+
+
+//转换我们的3dSweep数据到cesium的polylinevolumeGraphics
+function toPolylineVolume(geo3dSweep)
+{
+  //转换shape
+  var shape =[]
+  geo3dSweep.geometry.profile.forEach(function (value, index) {
+    shape.push(new Cesium.Cartesian2(value[0],value[1]));//shape截面的cesium储存格式不是纯数组，是Cartesian2类型的数组
+  });
+  //转换position
+  var position = Cesium.Cartesian3.fromDegreesArrayHeights(geo3dSweep.geometry.line.flat(2));//二维数组转一维数组，来符合cesium数据格式
+
+  var polylineVolume = 
+  {
+    name:geo3dSweep.properties.name,
+    polylineVolume:new Cesium.PolylineVolumeGraphics
+    ({
+      positions: position,
+      shape:shape,
+      material: Cesium.Color.BLUE,
+    })
+  }
+  return polylineVolume;
+}
+//转换我们的3dLine数据到cesium的polyline. (可入到专门的数据处理.js里)
+function toPolyline(geo3dLineList)
+{
+  var polylineList = [];
+  geo3dLineList.forEach(function (geo3dLine, index) {
+  {
+    var position = geo3dLine.geometry.coordinates.flat(2);//cesium的polyline是一维list[1,2,3,4,5,6]
+    var polyline = 
+    {
+      name:"Orange line with black outline at height and following the surface",
+      polyline: {
+      positions: Cesium.Cartesian3.fromDegreesArrayHeights(position),
+      width: 5,
+      //arcType: Cesium.ArcType.NONE,
+      clampToGround:false,//线条是否贴地
+      material: new Cesium.PolylineOutlineMaterialProperty({
+        color: Cesium.Color.ORANGE,
+        outlineWidth: 1,
+        outlineColor: Cesium.Color.BLACK,
+      }),
+     },
+   };
+  polylineList.push(polyline);
+  }
+})
+  return polylineList;
+
+}
+//贝塞尔曲线测试
+const times = [ 0.0, 1.5, 3.0, 4.5, 6.0 ];//time不是时间，是贝塞尔曲线的t。每一个t都对应点坐标。
+const spline = new Cesium.LinearSpline({
+    times : times,
+    points : [
+        new Cesium.Cartesian3(1235398.0, -4810983.0, 4146266.0),
+        new Cesium.Cartesian3(1372574.0, -5345182.0, 4606657.0),
+        new Cesium.Cartesian3(-757983.0, -5542796.0, 4514323.0),
+        new Cesium.Cartesian3(-2821260.0, -5248423.0, 4021290.0),
+        new Cesium.Cartesian3(-2539788.0, -4724797.0, 3620093.0)
+    ]
+});
+
+const p0 = spline.evaluate(0.3);
+console.log(p0);
+
+
+
+var xiaoxiangSec = [new Cesium.Cartesian2(-12100,-572),new Cesium.Cartesian2(-12250,-642),new Cesium.Cartesian2(-11987,-1558),new Cesium.Cartesian2(-11265,-1595),new Cesium.Cartesian2(-11215,-1545),new Cesium.Cartesian2(-10953,-622),new Cesium.Cartesian2(-11103,-552)]
+
+var polylineVolume1 = new Cesium.PolylineVolumeGraphics({
+      positions: Cesium.Cartesian3.fromDegreesArrayHeights([
+      -85,
+      39,
+      1000,
+      -85,
+      38,
+      30000,
+    ]),
+    shape: xiaoxiangSec,
+    material: Cesium.Color.BLUE,
+})
+  
+var entity1 = {
+  name:"Orange line with black outline at height and following the surface",
+  polylineVolume: polylineVolume1,
+}
+
+const ref = viewer.entities.add({
+  name: "Purple straight arrow at height",
+  polyline: {
+    positions: Cesium.Cartesian3.fromDegreesArrayHeights([
+      -85,
+      39,
+      2000,
+      -85,
+      38,
+      20000,
+    ]),
+    width: 10,
+    material: new Cesium.PolylineArrowMaterialProperty(
+      Cesium.Color.PURPLE
+    ),
+  },
+});
+viewer.zoomTo(viewer.entities);
+
+function add(){
+
+  for (var i=0;i<200;i++)
+{ 
+  entity1.polylineVolume.positions = Cesium.Cartesian3.fromDegreesArrayHeights([
+      -85+i*0.02,
+      39,
+      1000,
+      -85+i*0.02,
+      38,
+      30000,
+    ])
+  const orangeOutlined = viewer.entities.add(entity1);
+}
+
+}
+
+//2- test ajax call for geojson
+
+$(document).ready(function(){
+  //1-geojson类接口查询数据并渲染
+$('#b01').click(function(){
+            $.ajax({
+                //url
+                url: '/alignment',
+                //参数
+                data: {a:100, b:200},
+                //请求类型
+                type: 'POST',
+                //响应体结果
+                dataType: 'json',
+                //成功的回调
+                success: function(data){
+                  console.log(data);
+                    //返回数据是geojson
+                    viewer.dataSources.add(Cesium.GeoJsonDataSource.load(data, 
+                    {
+                    stroke: Cesium.Color.HOTPINK,
+                    fill: Cesium.Color.PINK,
+                    strokeWidth: 3,
+                    markerSymbol: '?'
+                    }))
+                },
+                //超时时间
+                timeout: 2000,
+                //失败的回调
+                error: function(){
+                    console.log('出错啦!!');
+                },
+                //头信息
+                headers: {
+                    c:300,
+                    d:400
+                }
+            });
+        });
+
+//2-3dSweep类接口查询数据并渲染
+$('#b02').click(function(){
+            $.ajax({
+                //url
+                url: '/girder',
+                //参数
+                data: {a:100, b:200},
+                //请求类型
+                type: 'POST',
+                //响应体结果
+                dataType: 'json',
+                //成功的回调
+                success: function(data){
+                    console.log(data);
+                    //返回数据是3d
+                    var entity1 = toPolylineVolume(data);
+                    viewer.entities.add(entity1);
+                },
+                //超时时间
+                timeout: 2000,
+                //失败的回调
+                error: function(){
+                    console.log('出错啦!!');
+                },
+                //头信息
+                headers: {
+                    c:300,
+                    d:400
+                }
+            });
+        });
+// 3- 3dLine类接口查询数据并渲染
+$('#b03').click(function(){
+            $.ajax({
+                //url
+                url: '/alignment',
+                //参数
+                data: {a:100, b:200},
+                //请求类型
+                type: 'POST',
+                //响应体结果
+                dataType: 'json',
+                //成功的回调
+                success:function(data){
+                    console.log(data);
+                    //返回数据是3dLineList.entity2是让设计线贴地，并改颜色为绿色
+                    var entityList1 = toPolyline(data);
+                    entityList1.forEach(function(entity1,index){viewer.entities.add(entity1);})
+                    var entityList2 = toPolyline(data);
+                    entityList2.forEach(function(entity2,index)
+                    {
+                      entity2.polyline.clampToGround = true;
+                      entity2.polyline.material.color = Cesium.Color.GREEN,
+                      viewer.entities.add(entity2);
+                    })
+                    //viewer.zoomTo(viewer.entities);
+                },
+                //超时时间
+                timeout: 2000,
+                //失败的回调
+                error: function(){
+                    console.log('出错啦!!');
+                },
+                //头信息
+                headers: {
+                    c:300,
+                    d:400
+                }
+            });
+        });
+
+// 4- bridgeLine类接口查询数据并渲染
+$('#b04').click(function(){
+            $.ajax({
+                //url
+                url: '/bridgeLine',
+                //参数
+                data: {a:100, b:200},
+                //请求类型
+                type: 'POST',
+                //响应体结果
+                dataType: 'json',
+                //成功的回调
+                success:function(data){
+                    console.log(data);
+                    //返回数据是3dLineList
+                    var entityList = toPolyline(data);
+                    entityList.forEach(function(entity1,index){viewer.entities.add(entity1);})
+                    //viewer.zoomTo(viewer.entities);
+                },
+                //超时时间
+                timeout: 2000,
+                //失败的回调
+                error: function(){
+                    console.log('出错啦!!');
+                },
+                //头信息
+                headers: {
+                    c:300,
+                    d:400
+                }
+            });
+        });
+      
+      
+      
+});
+
+ 
+
+//测试gtlf模型
+var position = Cesium.Cartesian3.fromDegrees(  -79.5618746585886, 8.956112038477281);
+const heading = Cesium.Math.toRadians(120);
+const pitch = 0;
+const roll = 0;
+var orientation = Cesium.Transforms.headingPitchRollQuaternion(position, new Cesium.HeadingPitchRoll(heading, pitch, roll));
+var entity = viewer.entities.add({
+    position : position,
+    orientation:orientation,
+    model : {
+        uri : '321.glb'
+    }
+});
+viewer.trackedEntity = entity;
+//
+var position2 = Cesium.Cartesian3.fromDegrees(  -79.56250694365981, 8.954893773025661);
+var entity = viewer.entities.add({
+    position : position2,
+    orientation:orientation,
+    model : {
+        uri : '333.glb'
+    }
+});
+var position3 = Cesium.Cartesian3.fromDegrees(  -79.56269994247904, 8.954379106525701);
+var entity = viewer.entities.add({
+    position : position3,
+    orientation:orientation,
+    model : {
+        uri : '333.glb'
+    }
+});
+
+
+    // Fly the camera to San Francisco at the given longitude, latitude, and height.
+    // viewer.camera.flyTo({
+    //   destination : Cesium.Cartesian3.fromDegrees(-122.4175, 37.655, 400),
+    //   orientation : {
+    //     heading : Cesium.Math.toRadians(0.0),
+    //     pitch : Cesium.Math.toRadians(-15.0),
+    //   }
+    // });
+    
+  </script>
+ </div>
+</body>
+</html>
